@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import {View, Text, StyleSheet, ScrollView, Image} from 'react-native'
+import {View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, ToastAndroid} from 'react-native'
 import { MaterialIcons, Ionicons, AntDesign  } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -13,35 +13,69 @@ export default function ListFavorite({setShowFvorite}) {
         }
         result()
     },[])
+
     const getData = async () => {
         try {
           const jsonValue = await AsyncStorage.getItem('fav')
-          console.log(JSON.parse(jsonValue));
           return jsonValue != null ? JSON.parse(jsonValue) : null;
         } catch(e) {
           console.log({e});
         }
       }
-    return (
-        <View style={styles.container}>
-            <AntDesign name="back" size={24} color="#fff" onPress={() => setShowFvorite(false)} />
-            <ScrollView>
-                {list.map((item) => {
-                    return (
-                        <View style={styles.viewData}>
-                            <Image style={styles.stretch} source={{uri:item.Poster}}/>
-                            <View style={styles.viewFav}>
-                                {/* <MaterialIcons name="favorite" size={24} color="red" onPress={handleWriteFavorite}/> */}
-                                <Text style={styles.title} key={item.imdbId} onPress={() => alert('Ir para outra tela mostrando os dados do filme')}>
-                                    {item.Title}
-                                </Text>
-                                <Ionicons name="md-information-circle-sharp" size={24} color="#fff" style={styles.information} />
-                            </View>
 
-                        </View>)})}
-            </ScrollView>
-        </View>
-    )
+      const handleRemoveFavorite = async (imdbID) => {
+        // console.log(imdbID);
+        const data = await getData()
+        const newData = data.filter(id => id.imdbID !== imdbID)
+        console.log(newData);
+        setList(newData)
+        await AsyncStorage.setItem('fav', JSON.stringify(newData))
+      }
+
+      const showToastWithGravity = (title) => {
+        ToastAndroid.show(
+          `O filme ${title} foi removido na lista de favoritos!`,
+          ToastAndroid.LONG,
+          ToastAndroid.CENTER
+        );
+      };
+    
+      if(list.length > 0){
+
+        return (
+            <View style={styles.container}>
+                <AntDesign name="back" size={24} color="#fff" onPress={() => setShowFvorite(false)} />
+                <Text style={styles.titleFav}>Filmes Favoritos</Text>
+                <ScrollView>
+                    {list.map((item) => {
+                        return (
+                            <View style={styles.viewData} key={item.imdbID}>
+                              <TouchableOpacity >
+                                <Image style={styles.stretch} source={{uri:item.Poster}}/>
+                              </TouchableOpacity>
+                                <View style={styles.viewFav}>
+                                    <MaterialIcons name="favorite" size={24} color="red" onPress={() => {
+                                      showToastWithGravity(item.Title)
+                                      handleRemoveFavorite(item.imdbID)
+                                      }}/>
+                                    <Text style={styles.title} key={item.imdbId} onPress={() => alert('Ir para outra tela mostrando os dados do filme')}>
+                                        {item.Title}
+                                    </Text>
+                                    <Ionicons name="md-information-circle-sharp" size={24} color="#fff" style={styles.information} />
+                                </View>
+    
+                            </View>)})}
+                </ScrollView>
+            </View>
+        )
+      }else{
+        return(
+          <View style={styles.container}>
+            <AntDesign name="back" size={24} color="#fff" onPress={() => setShowFvorite(false)} />
+            <Text style={styles.title}>Você não tem filmes favoritados</Text>
+          </View>
+        )
+      }
 }
 
 const styles = StyleSheet.create({
@@ -107,6 +141,13 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       justifyContent: 'space-between',
       marginVertical: 20
+    },
+
+    titleFav: {
+      marginVertical: 10,
+      color: '#fff',
+      fontSize: 20,
+      fontWeight: "bold",
     }
   
   });
